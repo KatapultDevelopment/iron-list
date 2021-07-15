@@ -284,7 +284,9 @@ Polymer({
       }
     </style>
 
+    <template is="dom-if" if="[[selectionEnabled]]" on-dom-change="_selectorDomChange" restamp>
     <array-selector id="selector" items="{{items}}" selected="{{selectedItems}}" selected-item="{{selectedItem}}"></array-selector>
+    </template>
 
     <div id="items">
       <slot></slot>
@@ -757,6 +759,13 @@ Polymer({
   },
 
   /**
+   * Store a reference to selector when it is stamped to the dom or setup a placeholder when it is removed.
+   */
+  _selectorDomChange: function(e) {
+    this.$.selector = e.currentTarget.if ? this.shadowRoot.querySelector('#selector') : null;
+  },
+
+  /**
    * Set the overflow property if this element has its own scrolling region
    */
   _setOverflow: function(scrollTarget) {
@@ -1171,7 +1180,7 @@ Polymer({
   },
 
   _removeItem: function(item) {
-    this.$.selector.deselect(item);
+    if (this.$.selector) this.$.selector.deselect(item);
     // remove the current focused item
     if (this._focusedItem &&
         this.modelForElement(this._focusedItem)[this.as] === item) {
@@ -1240,8 +1249,9 @@ Polymer({
         var inst = this.modelForElement(el);
         inst.__key__ = null;
         this._forwardProperty(inst, this.as, item);
+        var isSelected = this.$.selector ? this.$.selector.isSelected(item) : false;
         this._forwardProperty(
-            inst, this.selectedAs, this.$.selector.isSelected(item));
+            inst, this.selectedAs, isSelected);
         this._forwardProperty(inst, this.indexAs, vidx);
         this._forwardProperty(
             inst, 'tabIndex', this._focusedVirtualIndex === vidx ? 0 : -1);
@@ -1550,7 +1560,7 @@ Polymer({
       }
       this.updateSizeForIndex(index);
     }
-    this.$.selector.selectIndex(index);
+    if (this.$.selector) this.$.selector.selectIndex(index);
   },
 
   /**
@@ -1579,7 +1589,7 @@ Polymer({
       model[this.selectedAs] = false;
       this.updateSizeForIndex(index);
     }
-    this.$.selector.deselectIndex(index);
+    if (this.$.selector) this.$.selector.deselectIndex(index);
   },
 
   /**
@@ -1601,9 +1611,12 @@ Polymer({
    * @param {number} index The index of the item in the items array.
    */
   toggleSelectionForIndex: function(index) {
-    var isSelected = this.$.selector.isIndexSelected ?
+    var isSelected = false;
+    if (this.$.selector) {
+      isSelected = this.$.selector.isIndexSelected ?
         this.$.selector.isIndexSelected(index) :
         this.$.selector.isSelected(this.items[index]);
+    }
     isSelected ? this.deselectIndex(index) : this.selectIndex(index);
   },
 
@@ -1616,7 +1629,7 @@ Polymer({
     this._iterateItems(function(pidx, vidx) {
       this.modelForElement(this._physicalItems[pidx])[this.selectedAs] = false;
     });
-    this.$.selector.clearSelection();
+    if (this.$.selector) this.$.selector.clearSelection();
   },
 
   /**
@@ -1664,7 +1677,7 @@ Polymer({
 
   _multiSelectionChanged: function(multiSelection) {
     this.clearSelection();
-    this.$.selector.multi = multiSelection;
+    if (this.$.selector) this.$.selector.multi = multiSelection;
   },
 
   /**
